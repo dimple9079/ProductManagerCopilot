@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import "./UserStories.css";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://productmanagercopilot-9b9a.onrender.com";
 
 function UserStories({ onBack }) {
   const [stories, setStories] = useState([]);
