@@ -15,7 +15,7 @@ function Login({ onCreateAccount, onLogin }) {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/login`,
+        `${API_BASE_URL}/api/auth/login,
         {
           method: "POST",
           headers: {
