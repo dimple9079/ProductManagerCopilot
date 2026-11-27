@@ -1,3 +1,4 @@
+import API_BASE_URL from "../api";
 import { useState } from "react";
 import "./AIAssistant.css";
 
@@ -42,7 +43,7 @@ function AIAssistant({ onBack }) {
       }
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/assistant/chat",
+        `${API_BASE_URL}/api/ask`,
         {
           method: "POST",
           headers: {

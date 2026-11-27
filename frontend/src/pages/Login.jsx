@@ -1,3 +1,4 @@
+import API_BASE_URL from "../api";
 import { useState } from "react";
 
 function Login({ onCreateAccount, onLogin }) {
@@ -14,7 +15,7 @@ function Login({ onCreateAccount, onLogin }) {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/auth/login",
+        `${API_BASE_URL}/api/login`,
         {
           method: "POST",
           headers: {

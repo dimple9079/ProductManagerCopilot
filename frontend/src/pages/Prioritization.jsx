@@ -18,7 +18,7 @@ function Prioritization({ onBack }) {
       }
 
       const response = await fetch(
-        "http://127.0.0.1:8000/api/prioritization",
+        "https://productmanagercopilot-9b9a.onrender.com/api/prioritization",
         {
           headers: {
             Authorization: "Bearer " + token,

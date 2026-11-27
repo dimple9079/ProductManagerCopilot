@@ -1,3 +1,4 @@
+import API_BASE_URL from "../api";
 import "./Register.css";
 import { useState } from "react";
 
@@ -21,7 +22,7 @@ function Register({onBackToLogin}) {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/auth/register",
+        `${API_BASE_URL}/api/register`,
         {
           method: "POST",
           headers: {

@@ -52,7 +52,7 @@ function Dashboard({
 
       const responses = await Promise.all(
         endpoints.map((endpoint) =>
-          fetch(`http://127.0.0.1:8000${endpoint}`, {
+          fetch(`https://productmanagercopilot-9b9a.onrender.com${endpoint}`, {
             headers,
           })
         )
