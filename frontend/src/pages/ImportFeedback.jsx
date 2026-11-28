@@ -16,40 +16,59 @@ function ImportFeedback({ onBack, onContinue }) {
     setError("");
     setMessage("");
     setPreviewData([]);
+    setSelectedFile(null);
 
-    if (!file) {
-      setSelectedFile(null);
-      return;
-    }
+    if (!file) return;
 
     if (!file.name.toLowerCase().endsWith(".csv")) {
       setError("Please select a CSV file.");
-      setSelectedFile(null);
       return;
     }
 
-    setSelectedFile(file);
+    if (file.size === 0) {
+      setError("The selected CSV file is empty.");
+      return;
+    }
 
     Papa.parse(file, {
       header: true,
-      skipEmptyLines: true,
+      skipEmptyLines: "greedy",
+      delimiter: ",",
+      encoding: "UTF-8",
       complete: (results) => {
-        if (results.errors && results.errors.length > 0) {
-          setError("Could not read the CSV file.");
+        const rows = Array.isArray(results.data) ? results.data : [];
+        const fields = Array.isArray(results.meta?.fields) ? results.meta.fields : [];
+        const usableRows = rows.filter((row) =>
+          row && Object.values(row).some((value) => String(value ?? "").trim() !== "")
+        );
+
+        if (fields.length === 0 || usableRows.length === 0) {
+          setError("CSV has no usable header or feedback rows. Add a header (for example, feedback) and at least one feedback row.");
           return;
         }
 
-        setPreviewData(results.data.slice(0, 5));
+        // PapaParse may report recoverable row warnings; show usable data and surface
+        // the diagnostic rather than rejecting the whole file.
+        const parseWarning = results.errors?.[0];
+        if (parseWarning) {
+          const rowLabel = Number.isInteger(parseWarning.row) ? ` (row ${parseWarning.row + 1})` : "";
+          console.warn("CSV parse warning:", parseWarning);
+          setMessage(`CSV parsed with a warning${rowLabel}: ${parseWarning.message}`);
+        }
+
+        setSelectedFile(file);
+        setPreviewData(usableRows.slice(0, 5));
       },
-      error: () => {
-        setError("Failed to read CSV file.");
+      error: (parseError) => {
+        console.error("CSV parse error:", parseError);
+        setError(parseError?.message || "Failed to read CSV file.");
       },
     });
   };
 
   const handleImport = async () => {
-    if (!selectedFile) {
-      setError("Please select a CSV file first.");
+    if (!selectedFile || previewData.length === 0) {
+      setError("Please select a valid CSV file and check its preview first.");
       return;
     }
 
@@ -66,7 +85,6 @@ function ImportFeedback({ onBack, onContinue }) {
       setMessage("");
 
       const formData = new FormData();
-
       formData.append("file", selectedFile);
       formData.append("source_type", sourceType);
 
@@ -82,33 +100,25 @@ function ImportFeedback({ onBack, onContinue }) {
       );
 
       const rawResponse = await response.text();
-
       console.log("Import status:", response.status);
       console.log("Import response:", rawResponse);
 
       let data = {};
-
       try {
         data = JSON.parse(rawResponse);
       } catch {
-        data = {
-          detail: rawResponse || "Invalid server response",
-        };
+        data = { detail: rawResponse || "Invalid server response" };
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.detail || data.message || "Failed to import feedback."
-        );
+        throw new Error(data.detail || data.message || "Failed to import feedback.");
       }
 
       const analysis = data.analysis || {};
-
       setMessage(
         "Imported " +
           (data.records_imported || 0) +
-          " records successfully. " +
-          "Themes: " +
+          " records successfully. Themes: " +
           (analysis.themes_created || 0) +
           ", Pain Points: " +
           (analysis.pain_points_created || 0) +
@@ -117,9 +127,7 @@ function ImportFeedback({ onBack, onContinue }) {
       );
 
       setTimeout(() => {
-        if (onContinue) {
-          onContinue();
-        }
+        if (onContinue) onContinue();
       }, 1000);
     } catch (err) {
       console.error("Import error:", err);
@@ -138,14 +146,11 @@ function ImportFeedback({ onBack, onContinue }) {
 
         <div className="import-header">
           <h1>Import Customer Feedback</h1>
-          <p>
-            Upload a CSV file containing customer feedback for AI analysis.
-          </p>
+          <p>Upload a CSV file containing customer feedback for AI analysis.</p>
         </div>
 
         <div className="import-card">
           <label className="field-label">Feedback Source</label>
-
           <select
             value={sourceType}
             onChange={(event) => setSourceType(event.target.value)}
@@ -158,7 +163,6 @@ function ImportFeedback({ onBack, onContinue }) {
           </select>
 
           <label className="field-label">CSV File</label>
-
           <input
             type="file"
             accept=".csv"
@@ -166,16 +170,11 @@ function ImportFeedback({ onBack, onContinue }) {
             className="file-input"
           />
 
-          {selectedFile && (
-            <p className="file-name">
-              Selected: {selectedFile.name}
-            </p>
-          )}
+          {selectedFile && <p className="file-name">Selected: {selectedFile.name}</p>}
 
           {previewData.length > 0 && (
             <div className="preview-section">
               <h3>Preview</h3>
-
               <div className="preview-table-wrapper">
                 <table className="preview-table">
                   <thead>
@@ -185,7 +184,6 @@ function ImportFeedback({ onBack, onContinue }) {
                       ))}
                     </tr>
                   </thead>
-
                   <tbody>
                     {previewData.map((row, index) => (
                       <tr key={index}>
@@ -201,15 +199,12 @@ function ImportFeedback({ onBack, onContinue }) {
           )}
 
           {error && <div className="error-message">{error}</div>}
-
-          {message && (
-            <div className="success-message">{message}</div>
-          )}
+          {message && <div className="success-message">{message}</div>}
 
           <button
             className="import-button"
             onClick={handleImport}
-            disabled={loading || !selectedFile}
+            disabled={loading || !selectedFile || previewData.length === 0}
           >
             {loading ? "Importing..." : "Import Feedback"}
           </button>
