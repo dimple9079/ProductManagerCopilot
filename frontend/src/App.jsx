@@ -37,11 +37,15 @@ function App() {
     }
 
     const verifySession = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       try {
         const response = await fetch(`${API_BASE_URL}/api/workspace`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          signal: controller.signal,
         });
 
         if (!active) {
@@ -61,8 +65,14 @@ function App() {
           );
         }
       } catch (error) {
-        console.error("Session verification failed:", error);
+        if (active) {
+          console.error("Session verification failed:", error);
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("logged_in_name");
+          localStorage.removeItem("logged_in_email");
+        }
       } finally {
+        clearTimeout(timeoutId);
         if (active) {
           setIsAuthInitialized(true);
         }
