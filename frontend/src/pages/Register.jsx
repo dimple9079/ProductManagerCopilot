@@ -22,7 +22,7 @@ function Register({onBackToLogin}) {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/register`,
+        `${API_BASE_URL}/api/auth/register`,
         {
           method: "POST",
           headers: {
