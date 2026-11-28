@@ -140,6 +140,6 @@ Expected format:
     except Exception as error:
         print(
             "Pain point extraction error:",
-            error,
+            type(error).__name__,
         )
         return []

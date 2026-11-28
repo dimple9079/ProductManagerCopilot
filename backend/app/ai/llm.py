@@ -48,8 +48,4 @@ def generate_ai_response(prompt: str) -> str:
 
     result = result.strip()
 
-    print("\n========== AI RESPONSE ==========")
-    print(result)
-    print("========== END AI RESPONSE ==========\n")
-
     return result
