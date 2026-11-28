@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import API_BASE_URL from "./api";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -21,6 +22,59 @@ function App() {
   const [showRegister, setShowRegister] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(
+    () => !localStorage.getItem("access_token")
+  );
+
+  useEffect(() => {
+    let active = true;
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const verifySession = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/workspace`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!active) {
+          return;
+        }
+
+        if (response.ok) {
+          setIsLoggedIn(true);
+        } else if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("logged_in_name");
+          localStorage.removeItem("logged_in_email");
+        } else {
+          console.error(
+            "Session verification failed:",
+            response.status
+          );
+        }
+      } catch (error) {
+        console.error("Session verification failed:", error);
+      } finally {
+        if (active) {
+          setIsAuthInitialized(true);
+        }
+      }
+    };
+
+    verifySession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // LOGOUT
   const handleLogout = () => {
@@ -32,6 +86,10 @@ function App() {
     setCurrentPage("dashboard");
     setShowRegister(false);
   };
+
+  if (!isAuthInitialized) {
+    return <div role="status">Checking your session...</div>;
+  }
 
   // LOGIN / REGISTER
   if (!isLoggedIn) {
